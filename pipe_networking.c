@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
-
+#include <pipe_networking.h>
 
 
 /*#define READ 0
@@ -13,7 +13,31 @@
 */
 #define MESSAGE_BUFFER_SIZE 256
 
-int client_handshake(int * p){}
+int client_handshake(int * p){
+  umask(0);
+  int fd = open("mario", O_WRONLY);
+  *p = fd;
+  printf("WKP connected, creating private FIFO\n");
+  char fn[MESSAGE_BUFFER_SIZE];
+  itoa(getpid(),fn, MESSAGE_BUFFER_SIZE);
+  int r = mkfifo(fn, 0644);
+  if (r){
+    printf("error: %s\n", strerror(errno));
+    return;
+  }
+  write(fd, fn, sizeof(*fn));
+  printf("Sent private FIFO name through WKP\n");
+  int fd2 = open("fn", O_RDONLY);
+  printf("Opened private FIFO, waiting for response\n");
+  char buf[MESSAGE_BUFFER_SIZE];
+  read(fd2, buf, sizeof(*buf));
+  printf("Message received: %s, removing private FIFO\n", buf);
+  execlp("rm","rm",fn, NULL);
+  char buf2[MESSAGE_BUFFER_SIZE] = "howdy?";
+  write(fd, buf2, sizeof(*buf2));
+  printf("Confirmation message sent");
+  return fd2;
+}
 
 int server_handshake(int * p){
     umask(0);
