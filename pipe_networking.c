@@ -11,6 +11,7 @@
 #define WRITE 1
 */
 #define MESSAGE_BUFFER_SIZE 256
+#define HANDSHAKE_BUFFER_SIZE 256
 
 int client_handshake(int * p){
   umask(0);
@@ -79,21 +80,42 @@ int server_handshake(int * p){
     return fd2;
 }
 
-int server_handshake1(int * p, char * buffer ){
+int server_handshake1(char * buffer ){
   umask(0);
   int r = mkfifo("mario", 0644);
   if (r){
     printf("error: %s\n", strerror(errno));
-    return;
+    exit(0);
   }
   printf("WKP created, listening for connection\n");
   int fd = open("mario",O_RDONLY);
-  *p = fd;
+  
   printf("Connection Attempt\n");
-  read(fd, buf, MESSAGE_BUFFER_SIZE);
-  printf("Message received, Private FIFO: %s\n", buf);
+  read(fd, buffer, MESSAGE_BUFFER_SIZE);
+  
+  printf("Message received, Private FIFO: %s\n", buffer);
+
+  int f = fork();
+  if ( f == 0 ){
+    execlp("rm","rm","mario", NULL);
+  }    
+  printf("WKP removed\n");
+ 
+  return fd;
 }
 
+int server_handshake2( char * buffer, int from_client ){   
+
+    printf("Accessing private FIFO\n");    
+    int fd2 = open(buffer, O_WRONLY);
+    printf("Private FIFO Opened\n");
+    char buf2[MESSAGE_BUFFER_SIZE] = "hello";
+    write(fd2, buf2, MESSAGE_BUFFER_SIZE);
+    printf("Message sent\n");
+    read(from_client, buffer, MESSAGE_BUFFER_SIZE);
+    printf("Message received: %s\n", buffer);
+    return fd2;
+}
 
 /*int main() {
 
