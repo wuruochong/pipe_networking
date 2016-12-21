@@ -21,7 +21,7 @@ int main() {
   char buffer[HANDSHAKE_BUFFER_SIZE];
 
   while (1) {
-
+    signal(SIGINT, sighandler); 
     from_client = server_handshake1( buffer );
 
     int f = fork();
